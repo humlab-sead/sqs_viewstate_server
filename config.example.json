@@ -1,0 +1,21 @@
+{
+    "webserver": {
+        "httpPort": 8081,
+        "httpsPort": 8443
+    },
+    "google": {
+        "client_id": ""
+    },
+    "ssl": {
+        "keyFile": "cert/localhost.key",
+        "certFile": "cert/localhost.crt"
+    },
+    "db": {
+        "host": "",
+        "port": "27017",
+        "authdb": "",
+        "database": "",
+        "username": "",
+        "password": ""
+    }
+}
