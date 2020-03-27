@@ -54,12 +54,8 @@ class Database {
       
     saveViewState(user, viewState) {
         viewState = JSON.parse(viewState);
-      
-        let shaHasher = crypto.createHash('sha1');
-        shaHasher.update(user+this.config.security.salt);
-        let userToken = shaHasher.digest('hex');
 
-        viewState.user = userToken;
+        viewState.user = user;
 
         let p = this.db.collection('viewstate').insertOne(viewState);
 

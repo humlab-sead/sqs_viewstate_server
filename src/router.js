@@ -108,7 +108,7 @@ class Router {
             viewStatesCur.toArray((err, viewStates) => {
                 if (err) throw err;
                 userEmail = viewStates[0].user;
-                //console.log("Request to anonymize viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
+                console.log("Request to anonymize viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
 
                 const user = new User();
                 let userVerifyPromise = user.verifyGoogleUser(req.params.userIdToken);
@@ -121,7 +121,7 @@ class Router {
 
                     db.deleteUserFromViewstate(req.params.viewstateId);
                     let shaHasher = crypto.createHash('sha1');
-                    shaHasher.update(userObj.email+this.config.security.salt);
+                    shaHasher.update(userObj.email+global.config.security.salt);
                     let userToken = shaHasher.digest('hex');
                     console.log("Anonymized viewstate "+req.params.viewstateId+" which belonged to user "+userToken);
                     db.disconnect();
@@ -168,7 +168,7 @@ class Router {
 
             new Database(global.config).connect().then(db => {
                 let shaHasher = crypto.createHash('sha1');
-                shaHasher.update(userObj.email);
+                shaHasher.update(userObj.email+global.config.security.salt);
                 let userToken = shaHasher.digest('hex');
 
                 let status = db.saveViewState(userToken, jsonData.data);
