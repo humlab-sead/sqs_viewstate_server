@@ -108,20 +108,22 @@ class Router {
             viewStatesCur.toArray((err, viewStates) => {
                 if (err) throw err;
                 userEmail = viewStates[0].user;
-                console.log("Request to anonymize viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
+                //console.log("Request to anonymize viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
 
                 const user = new User();
                 let userVerifyPromise = user.verifyGoogleUser(req.params.userIdToken);
                 userVerifyPromise.then(userObj => {
                     if(userObj === false) {
-                        console.log("FAILED anonymizing viewstate "+req.params.viewstateId+" of user "+userObj.email);
+                        console.log("FAILED anonymizing viewstate "+req.params.viewstateId+", userObj is false ");
                         db.disconnect();
                         return res.send('{"status": "failed"}');
                     }
 
-                    //db.deleteViewstate(req.params.viewstateId);
                     db.deleteUserFromViewstate(req.params.viewstateId);
-                    console.log("Anonymized viewstate "+req.params.viewstateId+" which belonged to user "+userObj.email);
+                    let shaHasher = crypto.createHash('sha1');
+                    shaHasher.update(userObj.email+this.config.security.salt);
+                    let userToken = shaHasher.digest('hex');
+                    console.log("Anonymized viewstate "+req.params.viewstateId+" which belonged to user "+userToken);
                     db.disconnect();
                     return res.send('{"status": "ok"}');
                 });

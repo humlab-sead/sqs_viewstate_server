@@ -36,7 +36,7 @@ class Database {
 
     getViewStateList(user) {
         let shaHasher = crypto.createHash('sha1');
-        shaHasher.update(user);
+        shaHasher.update(user+this.config.security.salt);
         let userToken = shaHasher.digest('hex');
 
         const cursor = this.db.collection('viewstate').find({ user: userToken });
@@ -55,7 +55,11 @@ class Database {
     saveViewState(user, viewState) {
         viewState = JSON.parse(viewState);
       
-        viewState.user = user;
+        let shaHasher = crypto.createHash('sha1');
+        shaHasher.update(user+this.config.security.salt);
+        let userToken = shaHasher.digest('hex');
+
+        viewState.user = userToken;
 
         let p = this.db.collection('viewstate').insertOne(viewState);
 
