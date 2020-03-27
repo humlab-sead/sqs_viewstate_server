@@ -29,24 +29,6 @@ class Database {
         return this;
     }
 
-    batchConvertUserEmailsToHashes() {
-        const cursor = this.db.collection('viewstate').find({});
-
-        let viewStates = [];
-        cursor.toArray((err, viewStates) => {
-            for(let key in viewStates) {
-                console.log(viewStates[key].id, viewStates[key].user);
-
-                let shaHasher = crypto.createHash('sha1');
-                shaHasher.update(viewStates[key].user);
-                let userToken = shaHasher.digest('hex');
-                viewStates[key].user = userToken;
-
-                //this.db.collection('viewstate').replaceOne({ id: viewStates[key].id }, viewStates[key]);
-            }
-        });
-    }
-
     disconnect() {
         this.mongoClient.close();
         console.log("Disconnected from db server");

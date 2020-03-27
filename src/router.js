@@ -39,11 +39,6 @@ class Router {
         app.post('/viewstate', this.handleViewStatePost);
         app.delete('/viewstate/:viewstateId/:userIdToken', this.handleViewstateDelete); //We never actually delete anything, but we use this for removing the associated user information
         
-        /*
-        new Database(global.config).connect().then(db => {
-            db.batchConvertUserEmailsToHashes();
-        });
-        */
     }
     
     handleNullRequest(req, res) {
