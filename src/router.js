@@ -15,7 +15,6 @@ class Router {
         var certificate = fs.readFileSync(this.config.ssl.certFile, 'utf8');
         var credentials = {key: privateKey, cert: certificate};
         
-
         var app = express();
 
         var httpServer = http.createServer(app);
@@ -38,7 +37,14 @@ class Router {
         app.get('/viewstate/:viewstateId', this.handleViewStateGet);
         app.post('/viewstate', this.handleViewStatePost);
         app.delete('/viewstate/:viewstateId/:userIdToken', this.handleViewstateDelete); //We never actually delete anything, but we use this for removing the associated user information
-        
+
+    }
+
+    getUserToken(userEmail) {
+        let shaHasher = crypto.createHash('sha1');
+        shaHasher.update(userEmail+global.config.security.salt);
+        let userToken = shaHasher.digest('hex');
+        return userToken;
     }
     
     handleNullRequest(req, res) {
@@ -48,7 +54,6 @@ class Router {
     handleViewStateGet(req, res) {
         new Database(global.config).connect().then(db => {
             const viewStatesCur = db.getViewState(req.params.viewstateId);
-            
             let viewStates = [];
             viewStatesCur.toArray((err, viewStates) => {
                 if (err) throw err;
@@ -58,49 +63,7 @@ class Router {
           });
     }
 
-    handleViewstateDeleteOLD(req, res) {
-        /*
-        * FIXME: Viewstates should never be deleted - this is important for scientific references - but we can delete the reference to the user making the viewstate disappear from the user's personal viewstate list
-        */
-        const user = new User();
-
-        //Get user for this viewstate, then authenticate that user
-
-        new Database(global.config).connect().then(db => {
-            const viewStatesCur = db.getViewState(req.params.viewstateId);
-            let viewStates = [];
-            let userEmail = "";
-            viewStatesCur.toArray((err, viewStates) => {
-                if (err) throw err;
-                userEmail = viewStates[0].user;
-                console.log("Request to delete viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
-
-                const user = new User();
-                let userVerifyPromise = user.verifyGoogleUser(req.params.userIdToken);
-                userVerifyPromise.then(userObj => {
-                    if(userObj === false) {
-                        console.log("FAILED deleting viewstate "+req.params.viewstateId+" of user "+userObj.email);
-                        db.disconnect();
-                        return res.send('{"status": "failed"}');
-                    }
-
-                    db.deleteViewstate(req.params.viewstateId);
-                    console.log("Deleted viewstate "+req.params.viewstateId+" which belonged to user "+userObj.email);
-                    db.disconnect();
-                    return res.send('{"status": "ok"}');
-                });
-            });
-        });
-    }
-
     handleViewstateDelete(req, res) {
-        /*
-        * FIXME: Viewstates should never be deleted - this is important for scientific references - but we can delete the reference to the user making the viewstate disappear from the user's personal viewstate list
-        */
-        const user = new User();
-
-        //Get user for this viewstate, then authenticate that user
-
         new Database(global.config).connect().then(db => {
             const viewStatesCur = db.getViewState(req.params.viewstateId);
             let viewStates = [];
@@ -108,7 +71,7 @@ class Router {
             viewStatesCur.toArray((err, viewStates) => {
                 if (err) throw err;
                 userEmail = viewStates[0].user;
-                console.log("Request to anonymize viewstate "+req.params.viewstateId+" which belongs to user "+userEmail);
+                console.log("Request to anonymize viewstate "+req.params.viewstateId);
 
                 const user = new User();
                 let userVerifyPromise = user.verifyGoogleUser(req.params.userIdToken);
@@ -120,10 +83,8 @@ class Router {
                     }
 
                     db.deleteUserFromViewstate(req.params.viewstateId);
-                    let shaHasher = crypto.createHash('sha1');
-                    shaHasher.update(userObj.email+global.config.security.salt);
-                    let userToken = shaHasher.digest('hex');
-                    console.log("Anonymized viewstate "+req.params.viewstateId+" which belonged to user "+userToken);
+
+                    console.log("Anonymized viewstate "+req.params.viewstateId+" which belonged to user "+user.getUserToken());
                     db.disconnect();
                     return res.send('{"status": "ok"}');
                 });
@@ -137,18 +98,18 @@ class Router {
 
         userVerifyPromise.then(userObj => {
             if(userObj === false) {
-                console.log("FAILED sending list of viewstates for user "+userObj.email);
+                console.log("FAILED sending list of viewstates for user "+this.getUserToken(user.email));
                 return res.send('{"status": "failed"}');
             }
 
             new Database(global.config).connect().then(db => {
-                const viewStatesCur = db.getViewStateList(userObj.email);
+                const viewStatesCur = db.getViewStateList(user.getUserToken());
                 
                 let viewStates = [];
                 viewStatesCur.toArray((err, viewStates) => {
                     if (err) throw err;
                     db.disconnect();
-                    console.log("Sending list of viewstates for user "+userObj.email);
+                    console.log("Sending list of viewstates for user "+user.getUserToken());
                     return res.send(viewStates);
                   });
               });
@@ -162,21 +123,17 @@ class Router {
         
         userVerifyPromise.then(userObj => {
             if(userObj === false) {
-                console.log("FAILED storing viewstate for user "+userObj.email);
+                console.log("FAILED storing viewstate - no user");
                 return res.send('{"status": "failed"}');
             }
 
             new Database(global.config).connect().then(db => {
-                let shaHasher = crypto.createHash('sha1');
-                shaHasher.update(userObj.email+global.config.security.salt);
-                let userToken = shaHasher.digest('hex');
-
-                let status = db.saveViewState(userToken, jsonData.data);
+                let status = db.saveViewState(user.getUserToken(), jsonData.data);
                 db.disconnect();
                 if(!status) {
                     return res.send('{"status": "failed"}');
                 }
-                console.log("Storing viewstate for user "+userObj.email);
+                console.log("Storing viewstate for user "+user.getUserToken());
                 return res.send('{"status": "ok"}');
             });
         });

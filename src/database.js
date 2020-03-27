@@ -1,6 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
-const crypto = require('crypto');
 
 class Database {
     constructor(config) {
@@ -34,11 +33,7 @@ class Database {
         console.log("Disconnected from db server");
     }
 
-    getViewStateList(user) {
-        let shaHasher = crypto.createHash('sha1');
-        shaHasher.update(user+this.config.security.salt);
-        let userToken = shaHasher.digest('hex');
-
+    getViewStateList(userToken) {
         const cursor = this.db.collection('viewstate').find({ user: userToken });
         return cursor;
     }
@@ -60,7 +55,7 @@ class Database {
         let p = this.db.collection('viewstate').insertOne(viewState);
 
         p.then((a, b, c) => {
-            //console.log(a, b, c);
+            console.log("Viewstate inserted");
         });
       
         return true;

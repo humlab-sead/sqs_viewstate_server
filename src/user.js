@@ -1,22 +1,19 @@
 const {OAuth2Client} = require('google-auth-library');
+const crypto = require('crypto');
 const config = require("../config.json");
 
 class User {
     constructor() {
-        
     }
 
     async verifyGoogleUser(token) {
         const client = new OAuth2Client(config.google.client_id);
         const ticket = await client.verifyIdToken({
             idToken: token,
-            audience: global.config.google.client_id,  // Specify the CLIENT_ID of the app that accesses the backend
-            // Or, if multiple clients access the backend:
-            //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+            audience: global.config.google.client_id
         });
         const payload = ticket.getPayload();
         const userid = payload['sub'];
-        //console.log(payload, userid);
 
         let userValid = true;
         let error = "";
@@ -36,13 +33,18 @@ class User {
             error = "Ticket has expired";
         }
 
-        // If request specified a G Suite domain:
-        //const domain = payload['hd'];
-
         if(userValid) {
+            this.userObj = payload;
             return payload;
         }
         return false;
+    }
+
+    getUserToken() {
+        let shaHasher = crypto.createHash('sha1');
+        shaHasher.update(this.userObj.email+global.config.security.salt);
+        let userToken = shaHasher.digest('hex');
+        return userToken;
     }
 }
 module.exports = User;
