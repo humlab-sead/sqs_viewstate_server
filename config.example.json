@@ -17,5 +17,8 @@
         "database": "",
         "username": "",
         "password": ""
+    },
+    "security": {
+        "salt": ""
     }
 }
