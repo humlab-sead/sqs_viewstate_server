@@ -20,7 +20,7 @@ class Router {
         var httpServer = http.createServer(app);
         var httpsServer = https.createServer(credentials, app);
 
-        httpServer.listen(this.config.webserver.httpPort);
+        //httpServer.listen(this.config.webserver.httpPort);
         httpsServer.listen(this.config.webserver.httpsPort);
 
         app.use(bodyParser.json());
@@ -38,9 +38,11 @@ class Router {
         app.post('/viewstate', this.handleViewStatePost);
         app.delete('/viewstate/:viewstateId/:userIdToken', this.handleViewstateDelete); //We never actually delete anything, but we use this for removing the associated user information
 
+	console.log("Router init done");
     }
 
     getUserToken(userEmail) {
+	console.log("getUserToken");
         let shaHasher = crypto.createHash('sha1');
         shaHasher.update(userEmail+global.config.security.salt);
         let userToken = shaHasher.digest('hex');
@@ -48,10 +50,12 @@ class Router {
     }
     
     handleNullRequest(req, res) {
+	console.log("handleNullRequest");
         return res.send("No such command");
     }
     
     handleViewStateGet(req, res) {
+	console.log("handleViewStateGet");
         new Database(global.config).connect().then(db => {
             const viewStatesCur = db.getViewState(req.params.viewstateId);
             let viewStates = [];
@@ -64,6 +68,7 @@ class Router {
     }
 
     handleViewstateDelete(req, res) {
+	console.log("handleViewstateDelete");
         new Database(global.config).connect().then(db => {
             const viewStatesCur = db.getViewState(req.params.viewstateId);
             let viewStates = [];
@@ -93,9 +98,10 @@ class Router {
     }
 
     handleViewStateListGet(req, res) {
+	console.log("handleViewStateListGet");
         const user = new User();
         let userVerifyPromise = user.verifyGoogleUser(req.params.userIdToken);
-
+	console.log("User verification pending");
         userVerifyPromise.then(userObj => {
             if(userObj === false) {
                 console.log("FAILED sending list of viewstates for user "+this.getUserToken(user.email));
@@ -112,11 +118,12 @@ class Router {
                     console.log("Sending list of viewstates for user "+user.getUserToken());
                     return res.send(viewStates);
                   });
-              });
+              }).catch(() => { console.log("Everything has gone to hell"); });
         });
     }
     
     handleViewStatePost(req, res) {
+	console.log("handleViewStatePost");
         let jsonData = req.body;
         const user = new User();
         let userVerifyPromise = user.verifyGoogleUser(jsonData.user_id_token);
