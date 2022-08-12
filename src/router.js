@@ -1,6 +1,6 @@
 var fs = require('fs');
 var http = require('http');
-var https = require('https');
+//var https = require('https');
 var express = require('express');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
@@ -11,17 +11,19 @@ const vsManager = require("./ViewstateManager.class");
 class Router {
     constructor(config) {
         this.config = config;
+        /*
         var privateKey  = fs.readFileSync(this.config.ssl.keyFile, 'utf8');
         var certificate = fs.readFileSync(this.config.ssl.certFile, 'utf8');
         var credentials = {key: privateKey, cert: certificate};
-        
+        */
+
         var app = express();
 
         var httpServer = http.createServer(app);
-        var httpsServer = https.createServer(credentials, app);
+        //var httpsServer = https.createServer(credentials, app);
 
-        //httpServer.listen(this.config.webserver.httpPort);
-        httpsServer.listen(this.config.webserver.httpsPort);
+        httpServer.listen(this.config.webserver.httpPort);
+        //httpsServer.listen(this.config.webserver.httpsPort);
 
         app.use(bodyParser.json());
 
